@@ -1,0 +1,14 @@
+[dbMysql]
+host = localhost
+port = 3306
+user = root
+password = root
+db_name = python-test
+
+
+[dbMysql1]
+host = localhost
+port = 3306
+user = root
+password = root
+db_name = py_db
