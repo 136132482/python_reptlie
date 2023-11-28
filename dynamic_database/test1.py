@@ -1,8 +1,7 @@
 from threading import Lock
-
-import MySQLClient
+from dynamic_database import MySQLClient
 import time
-import mysql_DBUtils
+from  dynamic_database import mysql_DBUtils
 import operator
 
 
@@ -153,14 +152,15 @@ def createTable(tableName, columns):
     addCloums(columns, tableName)
     for add in list:
       mysql.insert(add)
+    conn.commit()
   except Exception as e:
             #cursor.close()  # 先关游标
             cursor.rollback()
             print(e)
-  finally:
-    cursor.close()
-    conn.commit()
-    conn.close()
+  # finally:
+  #   cursor.close()
+
+  #   conn.close()
 
 
 #
@@ -196,6 +196,7 @@ def addCloums(columns, tableName):
       else:
         addsql = f'ALTER TABLE  {tableName} ADD COLUMN   {column_name}  {column_definition} {column_utf} {column_end} '
       list.append(addsql)
+
     # mysql.insert(addsql)
     # print("新增字段" + column_name + "成功")  # 1
 
@@ -219,7 +220,8 @@ def  queryone(select_sql,select_datas=None):
     else:
       res=cursor1.execute(select_sql, select_datas)
     res = cursor1.fetchone()
-    print(res)  # {'id': 5, 'user_name': '赵子龙1', 'pazzword': '123456', 'sex': '男', 'age': 18, 'birthday': datetime.date(2023, 2, 13)}
+    print(res)
+    return res# {'id': 5, 'user_name': '赵子龙1', 'pazzword': '123456', 'sex': '男', 'age': 18, 'birthday': datetime.date(2023, 2, 13)}
   except:
     raise
   finally:
@@ -237,17 +239,7 @@ def querymany(select_sql,select_datas=None):
     else:
       cursor1.execute(select_sql,select_datas)
     res = cursor1.fetchmany()
-    for row in res:
-      id = row[0]
-      username = row[1]
-      pazzword = row[2]
-      sex = row[3]
-      age = row[4]
-      birthday = row[5]
-      # 打印结果
-      print(row)
-      print("id=%s,username=%s,pazzword=%s,sex=%s,age=%s,birthday=%s" % \
-            (id, username, pazzword, sex, age, birthday))
+    return res
   except:
     raise
   finally:
@@ -264,4 +256,20 @@ if __name__ == '__main__':
    # update()
    # delete()
    # queryone()
-   querymany()
+   # querymany()
+   data = [
+     {'id':1,'name':'Alice','age':25},
+     {'id':2,'name':'bob','age':30}
+   ]
+   sql= "INSERT INTO table_name (id, name, age) VALUES "
+   update_clause="ON DUPLICATE KEY UPDATE name = VALUES(name), age = VALUES(age)"
+
+
+   values=[]
+   for item in data:
+      values.append(f"({item['id']},{item['name']},{item['age']})")
+
+   sql+=",".join(values)
+   sql += " "+update_clause
+
+   print(sql)

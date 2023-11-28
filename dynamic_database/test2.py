@@ -1,13 +1,13 @@
-import test1
+import time
+
+from dynamic_database import test1
 import importlib
 import sys
 importlib.reload(sys)
 import os
-from reptliie_picture import taotu_reptile
-import mysql_DBUtils
+from  dynamic_database import mysql_DBUtils
 import threading
-
-import url_picture
+from dynamic_database import url_picture
 mysql = mysql_DBUtils.MyPymysqlPool("dbMysql1")
 config=mysql_DBUtils.Config
 
@@ -42,8 +42,6 @@ field_value_list=[]
 insert_datas = []
 #批量插入值自定义  自定义的插入值要和对应字段数相同
 def  downurl():
-    #该方法直接 爬取 套图 具体看reptliie_picture
-  # taotu_dict=taotu_reptile.downloadimgSets()
   taotu_dict=url_picture.taotu_dict
   for name,values in  taotu_dict.items():
       index=0;
@@ -51,19 +49,56 @@ def  downurl():
            field=(name,key,value,index)
            insert_datas.append(field)
            index+=1
-
+  return insert_datas
 #组装
-def packageList():
-  downurl()
+def packageList(tableName,insert_datas):
   if len(field_value_list)!=len(field_list):
       raise IndexError("参数字段数量与值的数量不相等")
   field_string = " ( "+','.join([elem for elem in field_list])+" ) "
   value_string =" ( "+ ','.join([elem for elem in field_value_list])+" ) "
   insert_sql = f"INSERT INTO `{tableName}` {field_string} VALUES {value_string}"
-  print(insert_datas)
-  print(insert_sql)
-  threadDownnload(insert_sql)
+  # sql=packageSql(insert_datas)
+  # print(insert_datas)
+  # print(insert_sql)
+  threadDownnload(insert_sql,insert_datas)
 
+
+def packageList(tableName,columns,insert_datas,*args):
+  if len(field_value_list)!=len(field_list):
+      raise IndexError("参数字段数量与值的数量不相等")
+  field_string = " ( " + ','.join([elem['column_name'] for elem in columns])+")"
+  # field_string = " ( "+','.join([elem for elem in field_list])+" ) "
+  # value_string =" ( "+ ','.join([elem for elem in field_value_list])+" ) "
+  # insert_sql = f"INSERT INTO `{tableName}` {field_string} VALUES {value_string}"
+  sql=packageSql(tableName,field_string,insert_datas,*args)
+  print(sql)
+  # print(insert_datas)
+  # print(insert_sql)
+  mysql.insertMany(sql)
+  mysql.dispose()
+
+
+
+
+
+def packageSql(tableName,field_string,insert_datas,*args):
+    sql = f"INSERT INTO `{tableName}` {field_string} VALUES "
+    update_clause = f"ON DUPLICATE KEY UPDATE "
+
+    values = []
+    for item in insert_datas:
+        values.append(f"{item}")
+
+    value_name =[]
+    for item in args:
+        value_name.append(f"{item} = VALUES({item})")
+
+
+    sql += ",".join(values)
+    sql += " " + update_clause
+    sql += ",".join(value_name)
+
+    return sql
 def  beansFieldtoPackage(tableName):
      res=insertsql(tableName)
      for  column in res:
@@ -109,12 +144,12 @@ def insertsql(tableName):
 
 thread_count=2000
 
-def threadDownnload(insert_sql):
+def threadDownnload(insert_sql,insert_datas):
     sub_lists = [insert_datas[i:i + thread_count] for i in range(0, len(insert_datas), thread_count)]
     print(sub_lists)
     threads = []
     for sub_list in sub_lists:
-        t = threading.Thread(target=test1.insert2, args=(insert_sql,sub_list,))
+        t = threading.Thread(target=mysql.insertMany, args=(insert_sql,sub_list,))
         threads.append(t)
         t.start()
 
@@ -124,9 +159,19 @@ def threadDownnload(insert_sql):
 
 if __name__ == '__main__':
     # createtabl()
-    tableName='reptlie_taotu'
-    beansFieldtoPackage(tableName)
-    packageList()
+    # tableName='reptlie_taotu'
+    # beansFieldtoPackage(tableName)
+    # insert_datas=downurl()
+    # packageList(insert_datas)
+
+    insert_datas = [
+      ("赵子龙1", "123456", "男", 18, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())),
+      ("赵子龙2", "123456", "男", 19, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())),
+      ("赵子龙3", "123456", "男", 20, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))]
+
+    sql=packageSql(insert_datas,'作者','书名')
+
+    print(sql)
 
 
 
