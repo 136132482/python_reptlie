@@ -5,9 +5,10 @@ import importlib
 import sys
 importlib.reload(sys)
 import os
+from reptliie_picture import taotu_reptile
 from  dynamic_database import mysql_DBUtils
 import threading
-from dynamic_database import url_picture
+from reptliie_picture import url_picture
 mysql = mysql_DBUtils.MyPymysqlPool("dbMysql1")
 config=mysql_DBUtils.Config
 
@@ -76,6 +77,7 @@ def packageList(tableName,columns,insert_datas,*args):
   # print(insert_sql)
   mysql.insertMany(sql)
   mysql.dispose()
+
 
 
 
@@ -153,7 +155,7 @@ def threadDownnload(insert_sql,insert_datas):
         threads.append(t)
         t.start()
 
-    # 等待所有线程执行完毕
+    # 等待所有线程执行完毕】=
     for t in threads:
         t.join()
 

@@ -1,5 +1,5 @@
 from threading import Lock
-from dynamic_database import MySQLClient
+from dynamic_database import mysql_client
 import time
 from  dynamic_database import mysql_DBUtils
 import operator
@@ -10,7 +10,7 @@ cursor=mysql._cursor
 conn=mysql._conn
 
 # db = MySQLClient.db
-db1=MySQLClient.db1
+db1=mysql_client.db1
 #
 #
 # cursor = db.cursor()
@@ -224,10 +224,10 @@ def  queryone(select_sql,select_datas=None):
     return res# {'id': 5, 'user_name': '赵子龙1', 'pazzword': '123456', 'sex': '男', 'age': 18, 'birthday': datetime.date(2023, 2, 13)}
   except:
     raise
-  finally:
-    # 释放资源
-    cursor1.close()
-    db1.close()
+  # finally:
+  #   # 释放资源
+  #   cursor1.close()
+  #   db1.close()
 
 def querymany(select_sql,select_datas=None):
   # select_sql = "SELECT * FROM `t_user` WHERE id >= %s AND sex = %s"
@@ -240,12 +240,12 @@ def querymany(select_sql,select_datas=None):
       cursor1.execute(select_sql,select_datas)
     res = cursor1.fetchmany()
     return res
-  except:
-    raise
-  finally:
-    # 释放资源
-    cursor1.close()
-    db1.close()
+  except Exception as e:
+     print(e)
+  # finally:
+  #   # 释放资源
+  #   cursor1.close()
+  #   db1.close()
 
 if __name__ == '__main__':
    # insert1()

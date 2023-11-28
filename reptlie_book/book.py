@@ -8,6 +8,9 @@ import os
 from bs4 import BeautifulSoup
 import sys
 import importlib
+
+from tqdm import tqdm, trange
+
 from dynamic_database import test1
 from dynamic_database import test2
 from dynamic_database  import mysql_DBUtils
@@ -18,11 +21,16 @@ import httpx
 import random
 from selenium.webdriver.common.by import By
 from selenium import webdriver
+from selenium.webdriver.chrome.service import Service as ChromeService
 import time
 import colorsys
 import concurrent.futures
 import progressbar
+import re
 
+
+#驱动放在reptlie_book目录下
+service = ChromeService(executable_path='D:\chromDriver\chromedriver-win64/chromedriver.exe')
 
 mysql = mysql_DBUtils.MyPymysqlPool("dbMysql1")
 
@@ -67,7 +75,7 @@ if os.path.exists(save_path) is False:
 
 
 def click(click_url):
-    browser = webdriver.Chrome()
+    browser = webdriver.Chrome(service=service)
     browser.maximize_window()
     browser.implicitly_wait(6)
     browser.get(click_url)
@@ -82,13 +90,48 @@ def get_soup(url):
     return bf
 
 
+
 # 获取章节内容
-def get_contents(chapter):
+def get_contents(chapter,texts_content):
     bf=get_soup(chapter)
     texts = bf.find('div', attrs={'id':'nr1'}).get_text()
+    texts_content.append(texts)
+    link= bf.find("td",attrs={'class':'next'}).find('a')
+    if link.get_text() =='下一页':
+        pageurl = server +link.get('href')
+        get_contents(pageurl,texts_content)
     # 获取div标签id属性content的内容 \xa0 是不间断空白符 &nbsp;
+
+def get_texts_content(chapter):
+    texts_content = []
+    get_contents(chapter,texts_content)
+    texts="\n".join(texts_content)
     content = texts.replace('\xa0' * 4, '\n').replace("最新网址：wap.ibiquges.org","")+"\n"
+    texts_content.clear()
     return content
+
+
+
+def get_contentsClick(chapter):
+    global texts_content
+    brower=click(chapter)
+    get_text(brower)
+    brower.close()
+    # 获取div标签id属性content的内容 \xa0 是不间断空白符 &nbsp;
+    texts="\n".join(texts_content)
+    content = texts.replace('\xa0' * 4, '\n').replace("最新网址：wap.ibiquges.org","")+"\n"
+    texts_content.clear()
+    return content
+
+
+def  get_text(brower):
+        brower.find_element(By.CLASS_NAME,"next").click()
+        bf = BeautifulSoup(brower.page_source, 'html.parser')
+        texts = bf.find('div', attrs={'id': 'nr1'}).get_text()
+        texts_content.append(texts)
+        link = bf.find("td", attrs={'class': 'next'}).find('a')
+        if link.get_text() == '下一页':
+            get_text(brower)
 
 
 
@@ -97,7 +140,9 @@ def write_txt(chapter, content, code):
     with codecs.open(chapter, 'a', encoding=code)as f:
         f.write(content)
 
-
+def write_txtw(chapter, content, code):
+    with codecs.open(chapter, 'w', encoding=code)as f:
+        f.write(content)
 # 主方法
 def main():
     soup = get_soup(book)
@@ -199,13 +244,36 @@ def  iterationChapter(soup,section_urls):
     end =time.time()
     print("共计耗时"+str(end-start))
 
-def downnloadBook(chapterName,chapter,bookname):
-    content = get_contents(chapter)
+def downnloadBook(chapterName,chapter,bookname,pbar):
+    content = get_texts_content(chapter)
     chapter = save_path + "/" + bookname+ ".txt"
     write_txt(chapter, content, 'utf8')
     print("\n ["+bookname+"]"+"当前下载章节为:"+chapterName+'下载完成')
+    pbar.update(1)
 
-
+def downnloadBooksubChapter(chapterBeans,pabr):
+    for i in trange(len(chapterBeans)):
+        chapterNameId = chapterBeans[i].get('id')
+        chapterName=chapterBeans[i].get('章节名称')
+        chapterName=remove_special_characters(chapterName)
+        chapterName=str(chapterNameId)+chapterName
+        chapter= chapterBeans[i].get('章节url')
+        bookname=chapterBeans[i].get('书名')
+        content = get_texts_content(chapter)
+        chapter = os.path.join(save_path,bookname,chapterName+".txt")
+        # if os.path.exists(chapter):
+        #      print("该章节已下载："+ chapter)
+        # chapter = save_path + "/" + bookname+"/"+chapterName+ ".txt"
+        write_txtw(chapter, content, 'utf8')
+        print("\n ["+bookname+"]"+"当前下载章节为:"+chapterName+'下载完成')
+        pabr.update(1)
+def remove_special_characters(string):
+    string=string.replace(" ","")
+    string = string.replace("/", "")
+    string = string.replace("?", "")
+    string = string.replace("\"", "")
+    string = string.translate(str.maketrans('', '', '@#$%^&*()_+'))
+    return string
 
 
 def thread_downloadBook(sub_list,bookname):
@@ -263,8 +331,9 @@ lock=threading.Lock()
 # 主要是用于这个书籍列表的目录
 def getBookList(links):
    with concurrent.futures.ThreadPoolExecutor() as exectuor:
-     exectuor.map(process_book,links)
-
+     for i in range(0,len(links)):
+       exectuor.submit(process_book,links[i])
+   exectuor.shutdown(wait=True)
 
 def process_book(link):
     str = link.find_all('a')[0].get('href')
@@ -273,18 +342,31 @@ def process_book(link):
     waphtml(chapter, bookname)
 
 
-thread_count=20
+thread_count=2000
 def foreachDownload():
-    for bookname,values in total_briefs_dict.items():
-       section_urls=values['章节url']
-       bookname=bookname.strip().split("\n")
-       threadDownnload(section_urls,bookname[0])
+    with concurrent.futures.ThreadPoolExecutor() as exectuor:
+        for i in range(0,len(list(total_briefs_dict.keys()))):
+            bookname= list(total_briefs_dict.keys())[i]
+            values = list(total_briefs_dict.values())[i]
+            exectuor.submit(thread_submit,values,bookname)
+    exectuor.shutdown(wait=True)
+
+
+def  thread_submit(values,bookname):
+        section_urls = values['章节url']
+        bookname = bookname.strip().split("\n")
+        with tqdm(total=len(section_urls)) as pbar:
+            for i in range(0, len(section_urls)):
+                key = list(section_urls.keys())[i]
+                value = list(section_urls.values())[i]
+                downnloadBook(key, value, bookname[0],pbar)
+
+            #下载本地暂时不用多线程
+        # threadDownnload(section_urls,bookname[0])
 
 
 
-
-
-#bookname 书名 section_urls 所有章节url
+#bookname 书名 section_urls 所有章节url 这个用字典干
 def threadDownnload(datas,bookname):
     sub_chapters = split_dict_by_book(datas, thread_count)
     threads = []
@@ -315,7 +397,6 @@ def split_dict_by_book(datas, count):
 
 #自定义穿创建表
 def createtabl(tableName):
-
     #测试数据
     # total_briefs_dict=briefs_dict.total_briefs_dict
     insert_datas=[]
@@ -441,8 +522,8 @@ def   voluntarily():
 if __name__ == '__main__':
     # main()
     voluntarily()
-
-
+    # content=get_contents("https://wap.ibiquges.org/wapbook/8345_3734159.html")
+    # print(content)
     # waphtml('https://wap.ibiquges.org/wapbook/118611.html',"青川十四")
     # print(total_briefs_dict)
     # for i in range(1, 101):

@@ -3,7 +3,7 @@
 # 导入requests库
 import threading
 
-import eventlet
+# import eventlet
 import requests
 # 导入文件操作库
 import os

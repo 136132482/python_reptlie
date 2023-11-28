@@ -190,14 +190,17 @@ class MyPymysqlPool(BasePymysqlPool):
             result = False
         return result
 
-    def insertMany(self, sql, values):
+    def insertMany(self, sql, values=None):
         """
         @summary: 向数据表插入多条记录
         @param sql:要插入的ＳＱＬ格式
         @param values:要插入的记录数据tuple(tuple)/list[list]
         @return: count 受影响的行数
         """
-        count = self._cursor.executemany(sql, values)
+        if values is None:
+            count = self._cursor.execute(sql)
+        else:
+            count = self._cursor.execute(sql, values)
         return count
 
     def __query(self, sql, param=None):
