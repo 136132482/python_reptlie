@@ -53,7 +53,11 @@ headers = [
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.99 Safari/537.36'
 ]
 
-
+# proxies = ['HTTP://110.243.30.23:9999', 'HTTP://222.189.191.206:9999', 'HTTP://118.212.104.138:9999',
+#            'HTTP://182.149.83.97:9999', 'HTTP://106.42.163.100:9999', 'HTTP://120.83.107.69:9999',
+#            'HTTP://60.13.42.135:9999', 'HTTP://60.205.188.24:3128', 'HTTP://113.195.232.23:9999',
+#            'HTTP://59.62.36.74:9000', 'HTTP://218.2.226.42:80']
+# proxy = {'HTTP': random.choice(proxies)}
 
 num=1
 num1=1
@@ -272,6 +276,8 @@ def remove_special_characters(string):
     string = string.replace("/", "")
     string = string.replace("?", "")
     string = string.replace("\"", "")
+    string = string.replace("！", "")
+    string = string.replace("！", "")
     string = string.translate(str.maketrans('', '', '@#$%^&*()_+'))
     return string
 
