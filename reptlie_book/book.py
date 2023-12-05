@@ -1,6 +1,7 @@
 # 导入requests库
 import threading
 
+import redis
 import requests
 # 导入文件操作库
 import codecs
@@ -15,22 +16,24 @@ from dynamic_database import test1
 from dynamic_database import test2
 from dynamic_database  import mysql_DBUtils
 from reptlie_book import briefs_dict
+from mitmproxy import http
 
 importlib.reload(sys)
 import httpx
 import random
 from selenium.webdriver.common.by import By
 from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.chrome.service import Service as ChromeService
 import time
 import colorsys
 import concurrent.futures
 import progressbar
 import re
+from browsermobproxy import Server
 
 
 #驱动放在reptlie_book目录下
-service = ChromeService(executable_path='D:\chromDriver\chromedriver-win64/chromedriver.exe')
 
 mysql = mysql_DBUtils.MyPymysqlPool("dbMysql1")
 
@@ -53,11 +56,12 @@ headers = [
     'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.99 Safari/537.36'
 ]
 
-# proxies = ['HTTP://110.243.30.23:9999', 'HTTP://222.189.191.206:9999', 'HTTP://118.212.104.138:9999',
-#            'HTTP://182.149.83.97:9999', 'HTTP://106.42.163.100:9999', 'HTTP://120.83.107.69:9999',
-#            'HTTP://60.13.42.135:9999', 'HTTP://60.205.188.24:3128', 'HTTP://113.195.232.23:9999',
-#            'HTTP://59.62.36.74:9000', 'HTTP://218.2.226.42:80']
-# proxy = {'HTTP': random.choice(proxies)}
+# r = redis.Redis(host='localhost', port=6379, db=0,decode_responses=True)
+# res = r.zremrangebyscore('proxies:universal', 1, 10)
+# print(res)
+# proxies = r.zrangebyscore('proxies:universal', 10, 100)
+# # [print(proxies) for proxies in res]
+# redis_proxy = {'HTTPS://': "https://" + random.choice(proxies), 'HTTP://': "http://" + random.choice(proxies)}
 
 num=1
 num1=1
@@ -77,17 +81,52 @@ save_path = 'F:\Book'
 if os.path.exists(save_path) is False:
     os.makedirs(save_path)
 
+PROXY_POOL_URL = 'http://127.0.0.1:5555/random'
+
+def get_proxy():
+    try:
+        response = requests.get(PROXY_POOL_URL)
+        if response.status_code == 200:
+            return response.text
+    except ConnectionError:
+            return None
+
+# 开启Proxy：注意指定自己下载解压后路径
+server = Server(
+    r'F:\python_home\pythondjango\browsermob-proxy-2.1.4-bin\browsermob-proxy-2.1.4\bin\browsermob-proxy.bat')
+server.start()
+proxy = server.create_proxy()
+
+
+
 
 def click(click_url):
-    browser = webdriver.Chrome(service=service)
+    # proxy = get_proxy()
+    chrome_options = Options()
+    # chrome_options=webdriver.ChromeOptions()
+    service = ChromeService(executable_path='D:\chromDriver\chromedriver-win64/chromedriver.exe')
+    # chrome_options.add_argument('--disable-gpu')
+
+    chrome_options.add_argument("--headless")
+    chrome_options.add_argument('--incognito')
+    chrome_options.add_argument('--ignore-certificate-errors')
+    chrome_options.add_argument('--ignore-urlfetcher-cert-requests')
+    proxy.new_har("kgdxpr", options={'captureContent': True, 'captureContent': True, 'captureBinaryContent': True})
+
+    chrome_options.add_argument('--proxy-server={0}'.format(proxy.proxy))
+    browser = webdriver.Chrome(service=service,options=chrome_options)
     browser.maximize_window()
-    browser.implicitly_wait(6)
+    browser.implicitly_wait(20)
+
     browser.get(click_url)
+
     return browser
 
 #获取html
 def get_soup(url):
-    res = httpx.get(url, headers=headers, timeout=10, verify=False)
+    proxy=get_proxy()
+    proxies = {'http://': 'http://' + proxy, 'https://': 'https://' + proxy,}
+    res = requests.get(url, headers=headers,proxies=proxies, timeout=10, verify=False)
     html = res.content
     html_doc = str(html, 'utf8')
     bf = BeautifulSoup(html_doc, 'html.parser')
@@ -525,6 +564,7 @@ def   voluntarily():
 
 
 
+
 if __name__ == '__main__':
     # main()
     voluntarily()
@@ -537,3 +577,9 @@ if __name__ == '__main__':
     #     print("进度: {}%: ".format(i), "▓" * (i // 2), end="")
     #     sys.stdout.flush()
     #     time.sleep(0.05)
+    # proxies = r.zrange('proxies:universal', 0, -1)
+    # res=r.zremrangebyscore('proxies:universal',1,10)
+    # print(res)
+    # res=r.zrangebyscore('proxies:universal',10,100)
+    # [print(proxies) for proxies in res]
+    # # proxy = {'HTTPS://': "https://" + random.choice(proxies), 'HTTP://': "http://" + random.choice(proxies)}

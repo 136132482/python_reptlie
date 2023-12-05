@@ -1,6 +1,14 @@
+import binascii
 import os
 import shutil
 import difflib
+
+import requests
+from Crypto.Cipher import AES
+import base64
+import binascii
+
+from reptliie_picture import taotu_reptile
 
 # import Levenshtein
 save_path1="F:\BeautifulPictures/taotu/"
@@ -104,9 +112,20 @@ def func(filepath, n):
         else:
             print('\t*n', file_p)
 
-
+def give_ts():
+    filename = 'video-123' + '.ts'
+    ts_url="https://tp5.panqing80.club/videos3/25706b7b99d864158c4a607c96dc94eb/25706b7b99d864158c4a607c96dc94eb7.ts?auth_key=1701610031-96-0-c5bb7ca5666309e17efc4c895950cf95"
+    res_ts = requests.get(ts_url, headers=taotu_reptile.headers).content
+    # 下载的 video-0000.ts video-0213.ts 文件保存目录
+    with open('C:\\Users\\ALIENWARE\\Downloads/' + filename, 'wb') as ts:
+        # 解密
+        cryptor = AES.new("1701610031-96-0-c5bb7ca5666309e17efc4c895950cf95", AES.MODE_CBC, binascii.a2b_hex('25706b7b99d864158c4a607c96dc94eb7'))
+        ts.write(cryptor.decrypt(res_ts))
+        print('下载:' + filename)
+print('下载完成')
 
 
 
 if __name__ == '__main__':
-    main()
+    # main()
+    give_ts()

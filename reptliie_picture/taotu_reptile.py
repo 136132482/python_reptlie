@@ -17,6 +17,7 @@ import redis
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 from concurrent.futures import ThreadPoolExecutor
+from selenium.webdriver.chrome.service import Service as ChromeService
 
 importlib.reload(sys)
 from selenium import webdriver
@@ -273,6 +274,7 @@ save_path1="F:\BeautifulPictures/taotu1/"
 # (2) 创建浏览器操作对象，就是指定我们驱动的路径
 path = 'D:\chromDriver\chromedriver-win64\chromedriver.exe'
 
+service = ChromeService(executable_path='D:\chromDriver\chromedriver-win64/chromedriver.exe')
 #创建套图字典
 taotu_dict={}
 global total_taotu_dict
@@ -280,7 +282,7 @@ total_taotu_dict={}
 
 def  downloadimgSets():
     num  = input("请输入要加载的次数:")
-    browser = webdriver.Chrome()
+    browser = webdriver.Chrome(service=service)
     browser.maximize_window()
     browser.implicitly_wait(6)
     browser.get(taotu_path1)
