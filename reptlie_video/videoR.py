@@ -346,7 +346,7 @@ if __name__ == '__main__':
     # mergeMp4("F:\Video\\ts_video\\疯马秀真的脱了")
     # removets("F:\Video\\ts_video\\疯马秀真的脱了")
 
-    downloadcurrent("https://087a.wlfnnu.com/category/7/10.html")
+    downloadcurrent("https://087a.wlfnnu.com/category/7/12.html")
 
     # loop = asyncio.get_event_loop()
     # loop.run_until_complete(get_list_video_download())
