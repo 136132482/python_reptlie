@@ -14,13 +14,16 @@ from tqdm.asyncio import tqdm_asyncio, trange
 
 from reptliie_picture import taotu_reptile
 from reptlie_book import  book
-from browsermobproxy import Server
 from reptlie_video import dict_video
 from re import search
 
 import io
 from PIL import Image
-
+import os
+import requests
+import random
+from multiprocessing.pool import ThreadPool
+from tqdm import tqdm
 
 # 经postman调用，发现这个网站请求需要请求头，否则会返回资源禁止访问
 headers = {
@@ -45,11 +48,7 @@ save_ts_path='F:\\Video\\ts_video'
 video_path="https://087a.wlfnnu.com"
 
 
-import os
-import requests
-import random
-from multiprocessing.pool import ThreadPool
-from tqdm import tqdm
+
 
 
 
@@ -98,7 +97,9 @@ async def  removets(downnname):
     files=os.listdir(downnname)
     for file in files:
        if os.path.isfile(os.path.join(downnname,file)):
-           os.remove(os.path.join(downnname,file))
+           if file.endswith('.ts'):
+               os.remove(os.path.join(downnname, file))
+
 
 def  get_content(url):
   try:
