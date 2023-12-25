@@ -1,10 +1,14 @@
 # For prerequisites running the following sample, visit https://help.aliyun.com/document_detail/611472.html
+import asyncio
 from http import HTTPStatus
 import dashscope
+
+from reptlie_voice_book import youdao
+
 dashscope.api_key="sk-2262f4bc3f1946038c0e8c62f197e577"
 
 
-#通义千问
+#通义千问  对话文本
 #a阿里云
 def call_with_messages(msg):
     content={}
@@ -28,7 +32,10 @@ def call_with_messages(msg):
             response.request_id, response.status_code,
             response.code, response.message)
         print(message)
-        raise ValueError(messages)
+        message= response.message
+        text = youdao.translator(message, "zh")
+        return text
+        # raise ValueError(messages)
 
 
 
@@ -36,5 +43,5 @@ def call_with_messages(msg):
 
 
 if __name__ == '__main__':
-   message=call_with_messages()
+   message=call_with_messages("请给我中文回答写一首描述人性的诗")
    print(message)
