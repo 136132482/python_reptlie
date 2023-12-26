@@ -3,13 +3,21 @@ import os.path
 import oss2
 from itertools import islice
 
+import yaml
+from  comment import  base64util
+
 # 1 代码嵌入方式配置
 
 # 填写RAM用户的访问密钥（AccessKey ID和AccessKey Secret）。
-accessKeyId = 'LTAI5tHqjMb8LAMezoQUriVZ'
-accessKeySecret = 'ko2nvUE4W2RWIITNxPcXNrWr7cdEfC'
+with open('crypto_config.yaml', 'r') as file:
+    config = yaml.safe_load(file)
+
+# 访问配置选项
+accessKeyId = config['oss_ask']['accessKeyId']
+accessKeySecret = config['oss_ask']['accessKeySecret']
+key = config['oss_ask']['key']
 # 使用代码嵌入的RAM用户的访问密钥配置访问凭证。
-auth = oss2.Auth(accessKeyId, accessKeySecret)
+auth = oss2.Auth(base64util.aes_decode(accessKeyId,key), base64util.aes_decode(accessKeySecret,key))
 
 # endpoint填写Bucket所在地域对应的Endpoint。以华东1（杭州）为例，Endpoint填写为https://oss-cn-hangzhou.aliyuncs.com。
 endpoint = 'http://oss-cn-beijing.aliyuncs.com'
@@ -94,7 +102,7 @@ def CalculateFolderLength(bucket, folder):
 
 if __name__ == '__main__':
     path="F:\\test_voice"
-    url=uoload_oss("F:\\test_voice\\audio.wav")
+    url=uoload_oss("F:\\test_voice\\audio.mp3")
     print(url)
     # path=path+"\\"+"test.wav"
     # down_oss("test/audio.wav",path)
