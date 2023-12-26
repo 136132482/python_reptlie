@@ -4,7 +4,9 @@ import oss2
 from itertools import islice
 
 import yaml
-from  comment import  base64util
+from  comment import  base64util,rsa_code
+
+
 
 # 1 代码嵌入方式配置
 
@@ -13,9 +15,15 @@ with open('crypto_config.yaml', 'r') as file:
     config = yaml.safe_load(file)
 
 # 访问配置选项
-accessKeyId = config['oss_ask']['accessKeyId']
-accessKeySecret = config['oss_ask']['accessKeySecret']
-key = config['oss_ask']['key']
+rsa_code=rsa_code.RsaCode()
+oss_key=rsa_code.decrypt_file("F:\python_workspace\python_replite\comment\crypto_config.yaml")
+# accessKeyId = config['oss_ask']['accessKeyId']
+# accessKeySecret = config['oss_ask']['accessKeySecret']
+# key = config['oss_ask']['key']
+accessKeyId=oss_key['accessKeyId']
+accessKeySecret=oss_key['accessKeySecret']
+key=oss_key['key']
+
 # 使用代码嵌入的RAM用户的访问密钥配置访问凭证。
 auth = oss2.Auth(base64util.aes_decode(accessKeyId,key), base64util.aes_decode(accessKeySecret,key))
 

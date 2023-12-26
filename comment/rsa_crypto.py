@@ -5,11 +5,7 @@ from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.asymmetric import rsa
 import os
-
-
-
-
-
+# import rsa
 # 生成私钥
 private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048, backend=default_backend())
 
@@ -47,12 +43,22 @@ def  encodedBytes_to_str(base64_data):
     return decoded_string
 
 
+
+
+
+
 if __name__ == '__main__':
-    accessKeyId = "kjdklasjdklajdaksljdaskljdsakljaskldj"
-    accessKeySecret = "lksajdklasjdkasjdklasjdklasjdklasjdklasmdkasmdkasmsakm"
-    accessKeyId=str_to_encodedBytes(accessKeyId)
-    encrypted= encrypted(accessKeyId)
-    print(encrypted)
-    message=decrypt(encrypted)
-    message= encodedBytes_to_str(message)
-    print(message)
+    # accessKeyId = "kjdklasjdklajdaksljdaskljdsakljaskldj"
+    # accessKeySecret = "lksajdklasjdkasjdklasjdklasjdklasjdklasmdkasmdkasmsakm"
+    # accessKeyId=str_to_encodedBytes(accessKeyId)
+    # encrypted= encrypted(accessKeyId)
+    # print(encrypted)
+    # message=decrypt(encrypted)
+    # message= encodedBytes_to_str(message)
+    # print(message)
+    private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048, backend=default_backend())
+
+    # 从私钥中提取公钥
+    public_key = private_key.public_key()
+    print(private_key)
+    print(public_key)

@@ -13,12 +13,15 @@ from comment   import  librosa_voice,comment_util
 from wechaty_bot import dashscope_demo, paraformer_demo
 from wechaty_puppet import ContactType
 from wechaty_plugin_contrib.matchers import ContactMatcher
-
+from wechaty_bot import stablediffusion_demo
 import pysilk
 import pandas as pd
 
 
 import os
+
+from wechaty_bot.dashscopevl_demo import simple_multimodal_conversation_call
+
 os.environ['WECHATY_PUPPET_SERVICE_TOKEN']='puppet_padlocal_8016548d2b554ebbb4f5c89767a83b00'
 os.environ['WECHATY_PUPPET']='wechaty-puppet-padlocal'
 os.environ['WECHATY_PUPPET_SERVICE_ENDPOINT']='192.168.0.107:7890'
@@ -81,11 +84,10 @@ logging.basicConfig(
 
 log = logging.getLogger(__name__)
 
-img_path='F:\\test_pic'
+
 mp3_path='F:\\test_voice'
-
 host_name="https://3g79q59242.imdo.co/"
-
+host_name_pic="https://3g79q59242.imdo.co/test_pic"
 async def message(msg: Message) -> None:
     """back on message"""
     from_contact = msg.talker()
@@ -109,21 +111,30 @@ async def message(msg: Message) -> None:
         #     'u=1116676390,2305043183&fm=26&gp=0.jpg',
         #     name='ding-dong.jpg')
         # text=await choice_type(type,msg)
-        if msg._payload.type == MessageType.MESSAGE_TYPE_IMAGE:
+        if msg._payload.type == MessageType.MESSAGE_TYPE_IMAGE or msg._payload.type ==MessageType.MESSAGE_TYPE_EMOTICON:
             file_box_2 = await msg.to_file_box()
             # 将Message转换为FileBox
-            os.chmod(img_path, stat.S_IRWXU)
+            img_path = 'F:\\test_voice\\test_pic'
             comment_util.createFile(img_path)
+            os.chmod(img_path, stat.S_IRWXU)
+            img_path=os.path.join(img_path,file_box_2.name)
             await file_box_2.to_file(file_path=img_path, overwrite=True)  # 将图片保存为本地文件
             # img_new_path = img_transform(img_in_path)  # 调用图片风格转换的函数
             # file_box_3 = FileBox.from_file(img_new_path)  # 从新的路径获取图片
             # await msg.say(file_box_2)
             # return file_box_2
-            text = file_box_2
+            img_name= os.path.basename(img_path)
+            images=img_name.split(".")
+            img_name_send=images[0]+"send."+images[1]
+            msg=simple_multimodal_conversation_call(host_name_pic+"/"+img_name,"描述一下照片的内容")
+            await stablediffusion_demo.sample_async_call(msg,img_name_send)
+            text = FileBox.from_file(os.path.dirname(img_path)+"/"+img_name_send)
+            await  remove_pic(img_path,img_name_send)
+            # 从新的路径获取图片
         elif msg._payload.type == MessageType.MESSAGE_TYPE_AUDIO:
             file_box_audio = await msg.to_file_box()
-            os.chmod(mp3_path, stat.S_IRWXU)
             comment_util.createFile(mp3_path)
+            os.chmod(mp3_path, stat.S_IRWXU)
             saved_file = os.path.join(mp3_path, file_box_audio.name)
             await file_box_audio.to_file(file_path=saved_file, overwrite=True)
             # # 将本地保存的语音文件发送给说话者
@@ -143,8 +154,19 @@ async def message(msg: Message) -> None:
             # bot_response_path = aip_synthesis(bot_response, wav_path_res)  # 语音生成
             # file_box_audio_new = FileBox.from_file(bot_response_path)
             # await msg.say(file_box_audio_new)
-        msg = dashscope_demo.call_with_messages(text)
-        await conversation.say(msg)
+            await remove_voice(saved_file, pcmPath, target)
+            text = dashscope_demo.call_with_messages(text)
+        await conversation.say(text)
+
+
+async def remove_pic(img_path,img_name_send):
+    img_name_send_url=os.path.dirname(img_path)+"/"+img_name_send
+    os.remove(img_path)
+    os.remove(img_name_send_url)
+async def  remove_voice(saved_file,pcmPath,target):
+     os.remove(saved_file)
+     os.remove(pcmPath)
+     os.remove(target)
 
 
 
