@@ -36,6 +36,7 @@ def createtabl():
   columns.append(column2.copy())
   columns.append(column3.copy())
   test1.createTable('reptlie_taotu',columns)
+  return  columns
 
 field_list=[]
 field_value_list=[]
@@ -160,20 +161,20 @@ def threadDownnload(insert_sql,insert_datas):
         t.join()
 
 if __name__ == '__main__':
-    # createtabl()
-    # tableName='reptlie_taotu'
-    # beansFieldtoPackage(tableName)
-    # insert_datas=downurl()
-    # packageList(insert_datas)
+    columns=createtabl()
+    tableName='reptlie_taotu'
+    beansFieldtoPackage(tableName)
+    insert_datas=downurl()
+    packageList(tableName,columns,insert_datas,'taotu_name')
 
-    insert_datas = [
-      ("赵子龙1", "123456", "男", 18, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())),
-      ("赵子龙2", "123456", "男", 19, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())),
-      ("赵子龙3", "123456", "男", 20, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))]
-
-    sql=packageSql(insert_datas,'作者','书名')
-
-    print(sql)
+    # insert_datas = [
+    #   ("赵子龙1", "123456", "男", 18, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())),
+    #   ("赵子龙2", "123456", "男", 19, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())),
+    #   ("赵子龙3", "123456", "男", 20, time.strftime("%Y-%m-%d %H:%M:%S", time.localtime()))]
+    #
+    # sql=packageSql(insert_datas,'作者','书名')
+    #
+    # print(sql)
 
 
 

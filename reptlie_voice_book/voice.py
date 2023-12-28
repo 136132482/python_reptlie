@@ -1,3 +1,4 @@
+import base64
 import concurrent
 import operator
 import threading
@@ -23,7 +24,9 @@ import concurrent.futures
 from tqdm.asyncio import tqdm, tqdm_asyncio, trange
 import edge_tts
 import asyncio
-
+import unicodedata
+from comment import comment_util
+import codecs
 book_res=[]
 def  choice_downn():
     global book_res
@@ -122,6 +125,19 @@ def threadDownnload(chapter_datas):
     for t in threads:
         t.join()
 
+
+async def new_threadDownnload(chapter_datas):
+    pbar=tqdm(total=len(chapter_datas))
+    sub_lists = [chapter_datas[i:i + thread_count] for i in range(0, len(chapter_datas), thread_count)]
+    print(sub_lists)
+    tasks = []
+    for sub_list in sub_lists:
+        task = asyncio.create_task(book.downnloadBooksubChapter(sub_list,pbar))
+        tasks.append(task)
+
+    await asyncio.wait(*tasks)
+
+
 #先要把这个对应bookurl数据查出来
 def getBookChapterurl():
     if len(sub_book_links)==1:
@@ -129,6 +145,8 @@ def getBookChapterurl():
     tupleids=tuple(sub_book_links)
     sql = f"select rbu.*,rb.书名 from reptlie_book_url rbu left join reptlie_book rb on rbu.reptlie_book_id=rb.id where reptlie_book_id in {tupleids} "
     res = mysql.getAll(sql)
+    if res is False:
+        raise ValueError("未检索到该数数据,请检查该书是否下载到数据库")
     # print(res)
     # user_sort=sorted(res,key=lambda x:x['章节名称'])
     group_res=groupby(res,key=lambda x:x['书名'])
@@ -138,20 +156,27 @@ def getBookChapterurl():
     return group_tict
 
 
-def  downbookList(res):
+async def  downbookList(res):
     size=len(list(res.keys()))
     with concurrent.futures.ThreadPoolExecutor() as exectuor:
+         tasks=[]
          for i  in range(0,size):
              name=list(res.keys())[i]
              values=res[name]
-             exectuor.submit(excutortBook, name,values)
-    exectuor.shutdown(wait=True)
+             # loop = asyncio.get_event_loop()
+             task= asyncio.create_task(excutortBook(name,values))
+             tasks.append(task)
+             # sync(excutortBook(name, values))
+    # exectuor.shutdown(wait=True)
+    await asyncio.gather(*tasks)
 
-def  excutortBook(name,values):
+
+async def  excutortBook(name,values):
     path = os.path.join(book.save_path, name)
     print(path)
     taotu_reptile.createFile(path)
-    threadDownnload(values)
+    await new_threadDownnload(values)
+
 
 
 #去除已经下载的书籍
@@ -188,7 +213,8 @@ def saveDownBook():
     # if len(exists_group_tict)==0:
     #    print("你要下载的书籍已存在")
     #    os.exit()
-    downbookList(group_tict)
+    # downbookList(group_tict)
+    asyncio.get_event_loop().run_until_complete(downbookList(group_tict))
     # exists_group_tict_mp3 = estimateBookmp3(group_tict)
     # if len(exists_group_tict_mp3) == 0:
     #     print("你要下载的书籍mp3已存在")
@@ -541,10 +567,31 @@ async def  choicce_volume(voice,rate):
     return  volume
 
 
+
+
+#主要是用于章节合到一起
+def   book_to_change():
+    files = os.listdir(book.save_path)
+    for file in files:
+        file_path=os.path.join(book.save_path, file)
+        if os.path.isdir(file_path):
+            files_by_book=os.listdir(file_path)
+            files.sort()
+            name=os.path.basename(file_path)
+            file_all_path = os.path.join(file_path, name + ".txt")
+            for file in files_by_book:
+                path=os.path.join(file_path,file)
+                with codecs.open(path,'rb') as f:
+                   content=f.read()
+                   # 将解码后的bytes转换为字符串
+                   # content= unicodedata.normalize('NFKC', content)
+                with codecs.open(file_all_path,'ab+') as f:
+                    f.write(content)
+
+
 if __name__ == '__main__':
     # getBookList()
-    #下载数据库目录
-    # saveDownBook()
+
     # gtts_os_debug(text="我是gtts库, 你想听听我的声音吗",mp3_filepath="gtts中文测试.mp3",language=1)
     # mzitu_window.createFile("F:\VoiceBook\帝们的那些事儿")
     # # gtts_os_debug("F:\Book\上帝们的那些事儿/291序那些上帝.txt","F:\Book",1)
@@ -552,7 +599,7 @@ if __name__ == '__main__':
     # output = 'F:\VoiceBook\帝们的那些事儿/292章一第零团队高天峰线.mp3'
     # rate = '-4%'
     # volume = '+0%'
-    book_change_mp3()
+    # book_change_mp3()
 
     # rate = int(input("请选择语速-100-100中的数字，默认为正常语速0,不选直接enter默认为0\n"))
     #
@@ -564,6 +611,10 @@ if __name__ == '__main__':
     # for i in range(len(sub_list_book)):
     #     loop = asyncio.get_event_loop()
     #     loop.run_until_complete(get_book_files(sub_list_book[i]))
-
     # asyncio.run(convert_text())
+
+
+    #下载数据库目录
+    # saveDownBook()
     # book_change_mp3()
+    book_to_change()

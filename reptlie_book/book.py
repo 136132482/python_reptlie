@@ -1,60 +1,34 @@
 # 导入requests库
+import asyncio
 import threading
-
 import redis
 import requests
 # 导入文件操作库
 import codecs
 import os
-from bs4 import BeautifulSoup
 import sys
 import importlib
-
+from bs4 import BeautifulSoup
 from tqdm import tqdm, trange
-
+from comment.proxy_util import get_soup, click, click_noproxy
 from dynamic_database import test1
 from dynamic_database import test2
 from dynamic_database  import mysql_DBUtils
 from reptlie_book import briefs_dict
 from mitmproxy import http
-
 importlib.reload(sys)
 import httpx
-import random
-from selenium.webdriver.common.by import By
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service as ChromeService
 import time
 import colorsys
 import concurrent.futures
 import progressbar
 import re
-from browsermobproxy import Server
-
-
+from comment import pyppeteer_demo
+from selenium.webdriver.common.by import By
 #驱动放在reptlie_book目录下
-
 mysql = mysql_DBUtils.MyPymysqlPool("dbMysql1")
 
-global headers
-# 给请求指定一个请求头来模拟chrome浏览器
-headers = [
-    "Mozilla/5.0 (Windows NT 6.3; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/39.0.2171.95 Safari/537.36",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/35.0.1916.153 Safari/537.36",
-    "Mozilla/5.0 (Windows NT 6.1; WOW64; rv:30.0) Gecko/20100101 Firefox/30.0",
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_9_2) AppleWebKit/537.75.14 (KHTML, like Gecko) Version/7.0.3 Safari/537.75.14",
-    "Mozilla/5.0 (compatible; MSIE 10.0; Windows NT 6.2; Win64; x64; Trident/6.0)",
-    'Mozilla/5.0 (Windows; U; Windows NT 5.1; it; rv:1.8.1.11) Gecko/20071127 Firefox/2.0.0.11',
-    'Opera/9.25 (Windows NT 5.1; U; en)',
-    'Mozilla/4.0 (compatible; MSIE 6.0; Windows NT 5.1; SV1; .NET CLR 1.1.4322; .NET CLR 2.0.50727)',
-    'Mozilla/5.0 (compatible; Konqueror/3.5; Linux) KHTML/3.5.5 (like Gecko) (Kubuntu)',
-    'Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.8.0.12) Gecko/20070731 Ubuntu/dapper-security Firefox/1.5.0.12',
-    'Lynx/2.8.5rel.1 libwww-FM/2.14 SSL-MM/1.4.1 GNUTLS/1.2.9',
-    "Mozilla/5.0 (X11; Linux i686) AppleWebKit/535.7 (KHTML, like Gecko) Ubuntu/11.04 Chromium/16.0.912.77 Chrome/16.0.912.77 Safari/535.7",
-    "Mozilla/5.0 (X11; Ubuntu; Linux i686; rv:10.0) Gecko/20100101 Firefox/10.0",
-    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.99 Safari/537.36'
-]
+
 
 # r = redis.Redis(host='localhost', port=6379, db=0,decode_responses=True)
 # res = r.zremrangebyscore('proxies:universal', 1, 10)
@@ -66,8 +40,7 @@ headers = [
 num=1
 num1=1
 num2=1
-headers = {'User-Agent': random.choice(headers)}
-# headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.99 Safari/537.36'}
+
 server = 'https://wap.ibiquges.org'
 # 星辰变地址
 book = f'https://wap.ibiquges.org/wapfull/{num}.html'
@@ -80,57 +53,6 @@ global save_path
 save_path = 'F:\Book'
 if os.path.exists(save_path) is False:
     os.makedirs(save_path)
-
-PROXY_POOL_URL = 'http://127.0.0.1:5555/random'
-
-def get_proxy():
-    try:
-        response = requests.get(PROXY_POOL_URL)
-        if response.status_code == 200:
-            return response.text
-    except ConnectionError:
-            return None
-
-# 开启Proxy：注意指定自己下载解压后路径
-server = Server(
-    r'F:\python_home\pythondjango\browsermob-proxy-2.1.4-bin\browsermob-proxy-2.1.4\bin\browsermob-proxy.bat')
-server.start()
-proxy = server.create_proxy()
-
-
-
-
-def click(click_url):
-    # proxy = get_proxy()
-    chrome_options = Options()
-    # chrome_options=webdriver.ChromeOptions()
-    service = ChromeService(executable_path='D:\chromDriver\chromedriver-win64/chromedriver.exe')
-    # chrome_options.add_argument('--disable-gpu')
-
-    chrome_options.add_argument("--headless")  # 不显示浏览器窗口
-    chrome_options.add_argument('--incognito')
-    chrome_options.add_argument('--ignore-certificate-errors')   # 禁用扩展插件
-    chrome_options.add_argument('--ignore-urlfetcher-cert-requests')  # https需要加上，要不然回报安全连接问题
-    proxy.new_har("kgdxpr", options={'captureContent': True, 'captureContent': True, 'captureBinaryContent': True})
-
-    chrome_options.add_argument('--proxy-server={0}'.format(proxy.proxy))
-    browser = webdriver.Chrome(service=service,options=chrome_options)
-    browser.maximize_window()
-    browser.implicitly_wait(20)
-
-    browser.get(click_url)
-
-    return browser
-
-#获取html
-def get_soup(url):
-    proxy=get_proxy()
-    proxies = {'http://': 'http://' + proxy, 'https://': 'https://' + proxy,}
-    res = requests.get(url, headers=headers,proxies=proxies, timeout=10, verify=False)
-    html = res.content
-    html_doc = str(html, 'utf8')
-    bf = BeautifulSoup(html_doc, 'html.parser')
-    return bf
 
 
 
@@ -156,9 +78,9 @@ def get_texts_content(chapter):
 
 
 def get_contentsClick(chapter):
-    global texts_content
+    texts_content = []
     brower=click(chapter)
-    get_text(brower)
+    get_text(brower,texts_content)
     brower.close()
     # 获取div标签id属性content的内容 \xa0 是不间断空白符 &nbsp;
     texts="\n".join(texts_content)
@@ -167,16 +89,47 @@ def get_contentsClick(chapter):
     return content
 
 
-def  get_text(brower):
-        brower.find_element(By.CLASS_NAME,"next").click()
+def  get_text(brower,texts_content):
         bf = BeautifulSoup(brower.page_source, 'html.parser')
         texts = bf.find('div', attrs={'id': 'nr1'}).get_text()
         texts_content.append(texts)
         link = bf.find("td", attrs={'class': 'next'}).find('a')
         if link.get_text() == '下一页':
-            get_text(brower)
+            brower.find_element(By.CLASS_NAME, "next").click()
+            get_text(brower,texts_content)
 
 
+
+
+async def  new_text_content(page,browser):
+    texts_content = []
+    await new_get_texts(page, texts_content, browser)
+    print("".join(texts_content))
+    # 3s 后关闭浏览器
+    # await asyncio.sleep(3)
+    await browser.close()
+    texts = "\n".join(texts_content)
+    content = texts.replace('\xa0' * 4, '\n').replace("最新网址：wap.ibiquges.org", "") + "\n"
+    return content
+
+
+
+async def  new_get_texts(page,texts_content,brower):
+        html = await page.content()
+        bf = BeautifulSoup(html, 'html.parser')
+        # page.querySelector("#nr1")
+        texts = bf.find('div', attrs={'id': 'nr1'})
+        if texts is not None:
+            texts=texts.get_text()
+            texts_content.append(texts)
+            link = bf.find("td", attrs={'class': 'next'}).find('a')
+            if link.get_text() == '下一页':
+                await (await page.querySelector(".next")).click()
+                # await asyncio.sleep(2)
+                await asyncio.sleep(2)
+                # brower.find_element(By.CLASS_NAME, "next").click()
+                page=(await brower.pages())[-1]
+                await new_get_texts(page,texts_content,brower)
 
 # 写入文件
 def write_txt(chapter, content, code):
@@ -287,14 +240,16 @@ def  iterationChapter(soup,section_urls):
     end =time.time()
     print("共计耗时"+str(end-start))
 
-def downnloadBook(chapterName,chapter,bookname,pbar):
-    content = get_texts_content(chapter)
+async def downnloadBook(chapterName,chapter,bookname,pbar):
+    page,browser =await pyppeteer_demo.pyppeteer_test(chapter)
+    content=await new_text_content(page,browser)
     chapter = save_path + "/" + bookname+ ".txt"
     write_txt(chapter, content, 'utf8')
     print("\n ["+bookname+"]"+"当前下载章节为:"+chapterName+'下载完成')
     pbar.update(1)
 
-def downnloadBooksubChapter(chapterBeans,pabr):
+
+async def downnloadBooksubChapter(chapterBeans,pabr):
     for i in trange(len(chapterBeans)):
         chapterNameId = chapterBeans[i].get('id')
         chapterName=chapterBeans[i].get('章节名称')
@@ -302,7 +257,8 @@ def downnloadBooksubChapter(chapterBeans,pabr):
         chapterName=str(chapterNameId)+chapterName
         chapter= chapterBeans[i].get('章节url')
         bookname=chapterBeans[i].get('书名')
-        content = get_texts_content(chapter)
+        page, browser = await pyppeteer_demo.pyppeteer_test(chapter)
+        content = await new_text_content(page, browser)
         chapter = os.path.join(save_path,bookname,chapterName+".txt")
         # if os.path.exists(chapter):
         #      print("该章节已下载："+ chapter)
@@ -310,6 +266,9 @@ def downnloadBooksubChapter(chapterBeans,pabr):
         write_txtw(chapter, content, 'utf8')
         print("\n ["+bookname+"]"+"当前下载章节为:"+chapterName+'下载完成')
         pabr.update(1)
+
+
+
 def remove_special_characters(string):
     string=string.replace(" ","")
     string = string.replace("/", "")
@@ -388,24 +347,24 @@ def process_book(link):
 
 
 thread_count=2000
-def foreachDownload():
+async def foreachDownload():
     with concurrent.futures.ThreadPoolExecutor() as exectuor:
+        total_briefs_dict=briefs_dict.total_briefs_dict
         for i in range(0,len(list(total_briefs_dict.keys()))):
             bookname= list(total_briefs_dict.keys())[i]
             values = list(total_briefs_dict.values())[i]
-            exectuor.submit(thread_submit,values,bookname)
-    exectuor.shutdown(wait=True)
+            await thread_submit(values,bookname)
+    # exectuor.shutdown(wait=True)
 
 
-def  thread_submit(values,bookname):
+async def  thread_submit(values,bookname):
         section_urls = values['章节url']
         bookname = bookname.strip().split("\n")
         with tqdm(total=len(section_urls)) as pbar:
             for i in range(0, len(section_urls)):
                 key = list(section_urls.keys())[i]
                 value = list(section_urls.values())[i]
-                downnloadBook(key, value, bookname[0],pbar)
-
+                await downnloadBook(key, value, bookname[0],pbar)
             #下载本地暂时不用多线程
         # threadDownnload(section_urls,bookname[0])
 
@@ -470,9 +429,9 @@ def createtabl(tableName):
 
 
 # #数据库保存
-def save_datas(tableName,columns,insert_datas,name1,name2):
+def save_datas(tableName,columns,insert_datas,*args):
     test2.beansFieldtoPackage(tableName)
-    test2.packageList(tableName,columns,insert_datas,name1,name2)
+    test2.packageList(tableName,columns,insert_datas,*args)
 
 
 
@@ -497,6 +456,7 @@ def  svae_dataurls(tableName,tableName1):
     columns_url.append(column3)
 
     fild_url_values = []
+    # total_briefs_dict=briefs_dict.total_briefs_dict
     for bookname, values in total_briefs_dict.items():
          section_urls = values['章节url']
          bookname = values['书名']
@@ -514,12 +474,17 @@ def  svae_dataurls(tableName,tableName1):
     exists_index(tableName1, 'index_url_name','章节url','章节名称')
     save_datas(tableName1,columns_url, fild_url_values,'章节url','章节名称')
 
-def exists_index(tableName,index_name,bookname,author):
+def exists_index(tableName,index_name,*args):
     show_sql=f"SHOW INDEX FROM {tableName} WHERE Key_name = '{index_name}' "
     res=mysql.getOne(show_sql)
     print(res)
     if res  is False:
-        index_sql=f"ALTER table {tableName} add  UNIQUE index {index_name}({bookname},{author})"
+        index_sql=f"ALTER table {tableName} add  UNIQUE index {index_name}("
+        files=[]
+        for arg in args:
+            files.append(arg)
+        file=",".join(files)
+        index_sql+=file+")"
         mysql.insert(index_sql)
 
 
@@ -530,7 +495,7 @@ def  choice_downnormysql():
             nums = input("请选择数字 1:下载到本地 2：下载到数据库")
             if nums =='1':
                 # 下载
-                foreachDownload()
+                asyncio.get_event_loop().run_until_complete(foreachDownload())
                 break
             elif nums=='2':
                 # 下载到数据库
@@ -567,7 +532,7 @@ def   voluntarily():
 
 if __name__ == '__main__':
     # main()
-    voluntarily()
+    # voluntarily()
     # content=get_contents("https://wap.ibiquges.org/wapbook/8345_3734159.html")
     # print(content)
     # waphtml('https://wap.ibiquges.org/wapbook/118611.html',"青川十四")
@@ -583,3 +548,5 @@ if __name__ == '__main__':
     # res=r.zrangebyscore('proxies:universal',10,100)
     # [print(proxies) for proxies in res]
     # # proxy = {'HTTPS://': "https://" + random.choice(proxies), 'HTTP://': "http://" + random.choice(proxies)}
+
+     asyncio.get_event_loop().run_until_complete(foreachDownload())
