@@ -24,7 +24,7 @@ from wechaty_bot.dashscopevl_demo import simple_multimodal_conversation_call
 
 os.environ['WECHATY_PUPPET_SERVICE_TOKEN']='puppet_padlocal_8016548d2b554ebbb4f5c89767a83b00'
 os.environ['WECHATY_PUPPET']='wechaty-puppet-padlocal'
-os.environ['WECHATY_PUPPET_SERVICE_ENDPOINT']='192.168.0.107:7890'
+os.environ['WECHATY_PUPPET_SERVICE_ENDPOINT']='192.168.0.101:7890'
 
 from wechaty_plugin_contrib.contrib import (
     RoomInviterOptions,
@@ -71,6 +71,8 @@ plugin_msg = AutoReplyPlugin(options=AutoReplyOptions(
         ContactMatcher(Optional[Wechaty]),
     ]
 ))
+
+
 
 
 

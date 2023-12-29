@@ -1,3 +1,6 @@
+import asyncio
+import base64
+import io
 import json
 import os
 import sys
@@ -10,6 +13,7 @@ from selenium import webdriver
 # from selenium.webdriver.ie.options import Options
 # from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.chrome.options import Options as chromOptions
+from selenium.webdriver.common.by import By
 from selenium.webdriver.edge.options import Options as edgeOptions
 from selenium.webdriver.edge.service import Service as edgeService
 from selenium.webdriver.chrome.service import Service as ChromeService
@@ -18,7 +22,10 @@ import paramiko
 import subprocess
 import httpx
 import  pyhttpx
+from wechaty_bot.emoji_xx import  emoji_xxxx
+from comment import  pyppeteer_demo
 requests.packages.urllib3.disable_warnings()
+from PIL import Image
 
 global headers
 # 给请求指定一个请求头来模拟chrome浏览器
@@ -69,7 +76,7 @@ with open('E:\\stealth.min.js-main\\stealth.min.js', 'r') as f:
 # proxy = server.create_proxy()
 
 def click(click_url):
-    proxy = get_proxy()
+    # proxy = get_proxy()
     # chrome_options = chromOptions()
     chrome_options=webdriver.ChromeOptions()
     service = ChromeService(executable_path='C:\\Program Files\\Google\\Chrome\\Application\\chromedriver.exe')
@@ -119,8 +126,71 @@ def get_soup(url):
     bf = BeautifulSoup(html_doc, 'html.parser')
     return bf
 
+def xh(brower):
+   t = True
+   time.sleep(1)
+   while t:
+      brower.execute_script("window.scrollBy(0,100)")
+      try:
+          # 滚动至元素ele可见位置
+          eles = brower.find_element(By.CSS_SELECTOR,'#rs table tr th a')
+          ele = eles[0]
+          brower.execute_script("arguments[0].scrollIntoView();", ele)
+          time.sleep(1)
+          t = False
+      except:
+         xh(brower)
 
+
+def  xlk(brower):
+    network_list=[]
+    for y in range(100):
+        js = 'window.scrollBy(0,300)'
+        brower.execute_script(js)
+        time.sleep(2)
+        network = brower.execute_script("return window.performance.getEntries();")
+        network_list.extend(network)
+        print("数量为："+str(len(network_list)))
+    return network_list
+save_path=''
+def get_href_network(url):
+    brower =click(url)
+    # brower.execute_script(pyppeteer_demo.pull_down_new)
+    network=xlk(brower)
+    # time.sleep(3)
+    # network = brower.execute_script("return window.performance.getEntries();")
+    brower.close()
+    data_list=[]
+    count=0
+    for data in network:
+        if data['name'].startswith("https://"):
+            if data['initiatorType']=='img':
+                url=data['name']
+                data_list.append(url)
+                print(data)
+                name=os.path.basename(url.split("?")[0])
+                name=name.split(".")
+                if len(name)>1:
+                    name = str(count) + "." + name[1]
+                else:
+                    name = str(count) + ".jpg"
+                emoji_xxxx.save_pic(url,name)
+        if data['name'].startswith("data:image"):
+                 url=data['name']
+                 decode_base64_image(url,save_path,count)
+        count+=1
+def decode_base64_image(base64_string,path,i):
+    data = base64_string.split(',')[1]
+    format=base64_string.split(',')[0]
+    format=format.split('/')[1]
+    format=format.split(';')[0]
+    path=os.path.join(path,str(i)+"."+format)
+    image_data=base64.b64decode(data)
+    image=Image.open(io.BytesIO(image_data))
+    print(image)
+    image.save(path,format)
 if __name__=='__main__':
-    proxy=get_proxy()
-    print(proxy)
+    # proxy=get_proxy()
+    # print(proxy)
+    get_href_network("https://image.baidu.com/search/index?tn=baiduimage&ipn=r&ct=201326592&cl=2&lm=-1&st=-1&fm=result&fr=&sf=1&fmq=1703833585535_R&pv=&ic=&nc=1&z=&hd=&latest=&copyright=&se=1&showtab=0&fb=0&width=&height=&face=0&istype=2&dyTabStr=MCwzLDEsMiw2LDQsNSw4LDcsOQ%3D%3D&ie=utf-8&sid=&word=%E8%A1%A8%E6%83%85%E5%8C%85")
 

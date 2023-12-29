@@ -1,5 +1,5 @@
 ssh_linux:
-     host: 192.168.0.107
+     host: 192.168.0.101
      port: 22
      username: root
      password: xiaohua1314
