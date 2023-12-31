@@ -1,8 +1,5 @@
-import base64
 import concurrent
-import operator
 import threading
-import time
 from concurrent.futures import ThreadPoolExecutor
 
 # from translate  import Translator
@@ -12,20 +9,17 @@ from  playsound import playsound
 # from   gtts  import  gTTS
 import os
 # import pyttsx3
-from progressbar import progressbar
 # from pygame import mixer
 from dynamic_database  import mysql_DBUtils
 from reptliie_picture import taotu_reptile
-from reptlie_voice_book import youdao
+from comment.youdao import youdao
 from reptlie_book import  book
 mysql = mysql_DBUtils.MyPymysqlPool("dbMysql1")
 from itertools import groupby
 import concurrent.futures
-from tqdm.asyncio import tqdm, tqdm_asyncio, trange
+from tqdm.asyncio import tqdm, tqdm_asyncio
 import edge_tts
 import asyncio
-import unicodedata
-from comment import comment_util
 import codecs
 book_res=[]
 def  choice_downn():
@@ -475,7 +469,7 @@ async def  get_choice_voice(datas):
                  if os.path.exists(path):
                      taotu_reptile.createFile(path)
                  text="你好，欢迎来到我的世界,很高兴认识你"
-                 text=youdao.translator(text,Local)
+                 text= youdao.translator(text, Local)
                  print(text)
                  tts = edge_tts.Communicate(text=text, voice=voice,rate='+0%',volume='+0%')
                  await tts.save(field_path)

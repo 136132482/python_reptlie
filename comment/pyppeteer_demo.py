@@ -1,7 +1,10 @@
 import asyncio
+import json
 import os
 import re
 import time
+import uuid
+from io import BytesIO
 from urllib.parse import urlsplit
 from pyppeteer import launch
 from bs4 import BeautifulSoup
@@ -9,11 +12,13 @@ from pyppeteer_stealth import stealth
 from pyppeteer.network_manager import Request, Response
 from pyquery import PyQuery as pq
 # from comment.proxy_util import get_proxy
-# proxy = get_proxy()
-# print(proxy)
+
 from pyppeteer import launcher
+from PIL import Image
+import requests
 
-
+from comment.proxy_util import get_proxy
+from wechaty_bot.emoji_xx.emoji_xxxx import *
 try:
     launcher.AUTOMATION_ARGS.remove("--enable-automation")
 except:
@@ -36,19 +41,34 @@ BASE_DIR = os.path.dirname(__file__)
 async def intercept_request(req):
     print("request url", req.url)
     print("request type", req.resourceType)
+    await get_url(req)
     if req.resourceType in ['stylesheet', 'script', 'image', 'media', 'eventsource', 'websocket']:
         await req.abort()
     else:
         await req.continue_()
 
+async  def  get_url(req):
+     if req.resourceType=='image':
+         emoji = emoji_xxxx()
+         name=str(uuid.uuid4())
+         await emoji.save_pic(req.url,name)
 
 async def intercept_response(res):
-    print(Response.url)
     resourceType = res.request.resourceType
     print("response type", resourceType)
     if resourceType in ['xhr', 'fetch','img']:
         resp = await res.text()
-        print(resp)
+        print("这是data:" + resp)
+        resp=json.loads(resp)
+        if type(resp)==dict:
+                list=resp['data']
+                for img in list:
+                    if 'thumbURL' in img:
+                        url=img['thumbURL']
+                        emoji = emoji_xxxx()
+                        name = str(uuid.uuid4())
+                        await emoji.save_pic(url,name)
+
         # if 'https://img' in resp:
         #     print(resp)
         #     content = await resp.text()
@@ -64,6 +84,8 @@ async def intercept_response(res):
 
 
 async def pyppeteer_test(url):
+    # proxy = get_proxy()
+    # print(proxy)
     # executablePath = pyppeteer.executablePath()
     # print('自动下载的 chromium 的存储位置为：', executablePath)
     browser = await launch(
@@ -83,7 +105,7 @@ async def pyppeteer_test(url):
             #'--start-fullscreen',
             # 窗口在浏览器中最大化(mac测试无效)
             #'--start-maximized'
-            # , f'--proxy-server={proxy}'
+             # f'--proxy-server={proxy}'
         ]
     )
     page = await browser.newPage()
@@ -120,6 +142,7 @@ async def pyppeteer_test(url):
     #                    })
     #             }
     #         """)
+
     return page,browser
 
 
@@ -225,5 +248,6 @@ async () => {
 };
 """
 if __name__ == '__main__':
-    asyncio.get_event_loop().run_until_complete(pyppeteer_test("https://image.baidu.com/search/index?tn=baiduimage&ct=201326592&lm=-1&cl=2&ie=gb18030&word=%B1%ED%C7%E9%B0%FC&fr=ala&ala=1&alatpl=normal&pos=0&dyTabStr=MCwzLDEsMiw2LDQsNSw4LDcsOQ%3D%3D"))
+    asyncio.get_event_loop().run_until_complete(pyppeteer_test("https://img0.bdstatic.com/static/searchresult/pkg/result_1676571.js"))
     #   asyncio.run(main())
+

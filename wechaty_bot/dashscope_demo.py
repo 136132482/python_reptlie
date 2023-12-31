@@ -1,9 +1,8 @@
 # For prerequisites running the following sample, visit https://help.aliyun.com/document_detail/611472.html
-import asyncio
 from http import HTTPStatus
 import dashscope
 
-from reptlie_voice_book import youdao
+from comment.youdao import youdao
 
 dashscope.api_key="sk-2262f4bc3f1946038c0e8c62f197e577"
 

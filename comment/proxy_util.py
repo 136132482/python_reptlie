@@ -10,6 +10,7 @@ import random
 import requests
 from bs4 import BeautifulSoup
 from selenium import webdriver
+from selenium.webdriver import DesiredCapabilities
 # from selenium.webdriver.ie.options import Options
 # from selenium.webdriver.firefox.options import Options
 from selenium.webdriver.chrome.options import Options as chromOptions
@@ -78,6 +79,13 @@ with open('E:\\stealth.min.js-main\\stealth.min.js', 'r') as f:
 def click(click_url):
     # proxy = get_proxy()
     # chrome_options = chromOptions()
+    # caps = DesiredCapabilities.CHROME
+    # caps['goog:loggingPrefs'] = {'performance': 'ALL'}
+    caps = {
+        "browserName": "chrome",
+        'goog:loggingPrefs': {'performance': 'ALL'}  # 开启日志性能监听
+    }
+
     chrome_options=webdriver.ChromeOptions()
     service = ChromeService(executable_path='C:\\Program Files\\Google\\Chrome\\Application\\chromedriver.exe')
     # chrome_options.add_argument("--headless")  # 不显示浏览器窗口
@@ -142,23 +150,49 @@ def xh(brower):
          xh(brower)
 
 
+def get_winodws_scroll(brower):
+    # 获取当前页面的高度
+    last_height = brower.execute_script("return document.body.scrollHeight")
+    network_list=[]
+    # 模拟下拉操作，直到滑动到底部
+    while True:
+        network = brower.execute_script("return window.performance.getEntries();")
+        print(len(network))
+        brower.delete_all_cookies()
+        network_list.extend(network_list)
+        # 模拟下拉操作
+        brower.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+        # 等待页面加载
+        time.sleep(2)
+        # 获取当前页面的高度
+        new_height = brower.execute_script("return document.body.scrollHeight")
+        # 判断是否已经到达页面底部
+        if new_height == last_height:
+            break
+        # 继续下拉操作
+        last_height = new_height
+    return network_list
+
 def  xlk(brower):
     network_list=[]
     for y in range(100):
         js = 'window.scrollBy(0,300)'
         brower.execute_script(js)
-        time.sleep(2)
+        # brower.delete_all_cookies()
         network = brower.execute_script("return window.performance.getEntries();")
-        network_list.extend(network)
-        print("数量为："+str(len(network_list)))
+        time.sleep(2)
+        if  y==99:
+          network_list.extend(network)
+        print("数量为："+str(len(network)))
     return network_list
 save_path=''
 def get_href_network(url):
     brower =click(url)
     # brower.execute_script(pyppeteer_demo.pull_down_new)
-    network=xlk(brower)
-    # time.sleep(3)
+    # network=xlk(brower)
     # network = brower.execute_script("return window.performance.getEntries();")
+    # print("数量为：" + str(len(network)))
+    network=get_winodws_scroll(brower)
     brower.close()
     data_list=[]
     count=0

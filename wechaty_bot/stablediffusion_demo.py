@@ -8,7 +8,7 @@ import requests
 from dashscope import ImageSynthesis
 
 from comment import comment_util
-from reptlie_voice_book import youdao
+from comment.youdao import youdao
 
 dashscope.api_key="sk-2262f4bc3f1946038c0e8c62f197e577"
 
