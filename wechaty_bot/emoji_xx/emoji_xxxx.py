@@ -60,6 +60,13 @@ class  emoji_xxxx(object):
 
     async def  get_emoji(self,emoji_path):
         page,browser=await pyppeteer_demo.pyppeteer_test(emoji_path)
+        await  page.evaluate("""()=>{
+                var element = document.querySelector('.MuiPaper-root MuiDialog-paper MuiDialog-paperScrollPaper MuiDialog-paperWidthSm MuiPaper-elevation24 MuiPaper-rounded')
+                element=element[0]
+                if (element && element.getAttribute('role') === 'dialog') {
+                element.parentNode.removeChild(element);
+              }              
+        }""")
         # await page.setRequestInterception(True)
         # page.on('request', pyppeteer_demo.intercept_request)
         # page.on('response', pyppeteer_demo.intercept_response)
@@ -161,7 +168,6 @@ class  emoji_xxxx(object):
                 except Exception as e:
                     print(e)
                     # os.remove(path)
-
 
 
     def update_image(self):
